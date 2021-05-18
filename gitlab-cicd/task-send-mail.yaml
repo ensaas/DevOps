@@ -28,9 +28,9 @@ spec:
 
         @retry(Exception, tries=3, delay=1)
         def send_mail(receivers, subject, message, file):
-            mail_user = "ensaas@wise-paas.com.cn"
-            mail_pass = "XfBX$c4e3E^BQ8#P95kFfcb4A?"
-            sender = "EnSaaS@wise-paas.com.cn"
+            mail_user = "ensaas"
+            mail_pass = ""
+            sender = "wise-paas.com.cn"
             msg = MIMEText(message)
             m = MIMEMultipart()
             m.attach(msg)
