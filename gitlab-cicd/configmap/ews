@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Config
+preferences: {}
+clusters:
+- cluster:
+    insecure-skip-tls-verify: true
+    server: https://k8s:443
+  name: fake-cluster
+users:
+- user:
+    token: eyJhbGciOiJSUzI1NiIsImtpZCI6Ikk5bFFWWXdNQ1g4YjNSSmp5OFBmMnpFNDU1WEpFRGlQV2lYRmhfd3FWUXMifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJjbHVzdGVyYWdlbnQtcHJveHktdG9rZW4tdmt2d3oiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiY2x1c3RlcmFnZW50LXByb3h5Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiOTVkNjFjOTgtZjZmZC00MWQ1LWJmOTUtYTY4ZThhZWMyZmI4Iiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50Omt1YmUtc3lzdGVtOmNsdXN0ZXJhZ2VudC1wcm94eSJ9.PTuslrsu2k76LwGTTNXifrp8yrXxuikw3TJoPxBv2fhz_qPTfqClTQbhcw7Pim0uu8zVdg4qjpCfIKFolE9digdOUdYslV6JHwRxVZMGIajks3BUy2s_U1W8VF1pB2oABeomxEoLvLLWG90vd5rBMBGbxtB5fvRPSGNiNb_OlU-cQnrPMf8EramNUJ5-WSJjOAJLGONlMDCdk-SFO9JrI2cVmXENe-8R68IpiIAp7c04--SWsaBIhqNxm_AqIjM2-nUmnACyhcBQDVoCAt25bdz2xp0FUKkka8vAJiDzhq48DRNxYF
+  name: fake-user
+contexts:
+- context:
+    cluster: fake-cluster
+    user: fake-user
+  name: fake-user-fake-cluster
+current-context: fake-user-fake-cluster

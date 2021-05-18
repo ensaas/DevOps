@@ -1,0 +1,123 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: gitlab-cicd
+spec:
+  resources:
+    - name: git-source
+      type: git
+    - name: image-source
+      type: image
+  params:
+    - name: pipeinerun_name
+    - name: git_project_name
+      type: string
+    - name: git_http_url
+    - name: ref
+      type: string
+    - name: ci
+    - name: cd
+    - name: user_email
+    - name: harbor_url
+      type: string
+    - name: pathToDockerFile
+      type: string
+      default: Dockerfile
+    - name: pathToContext
+      type: string
+      description: dockerfile dir
+
+  tasks:
+    - name: get-params
+      taskRef:
+        name: get-params
+      params:
+        - name: git_project_name
+          value: $(params.git_project_name)
+        - name: ref
+          value: $(params.ref)
+        - name: ci
+          value: $(params.ci)
+        - name: cd
+          value: $(params.cd)
+        - name: user_email
+          value: $(params.user_email)
+
+    - name: build-image
+      taskRef:
+        name: build-image
+      runAfter:
+        - get-params
+      retries: 2
+      params:
+      params:
+        - name: pathToDockerFile
+          value: $(params.pathToDockerFile)
+        - name: pathToContext
+          value: $(params.pathToContext)
+        - name: image_version
+          value: $(tasks.get-params.results.image_version)
+      resources:
+        inputs:
+          - name: git-source
+            resource: git-source
+        outputs:
+          - name: image-source
+            resource: image-source
+
+    - name: push-chart
+      taskRef:
+        name: push-chart
+      runAfter:
+        - get-params
+        - build-image
+      retries: 2
+      params:
+      params:
+        - name: harbor_url
+          value: $(params.harbor_url)
+        - name: chart_project
+          value: $(tasks.get-params.results.harbor_project)
+        - name: chart_name
+          value: $(tasks.get-params.results.chart_image_name)
+        - name: chart_version
+          value: $(tasks.get-params.results.chart_version)
+        - name: image_version
+          value: $(tasks.get-params.results.image_version)
+        - name: cluster
+          value: $(tasks.get-params.results.cluster)
+        - name: namespace
+          value: $(tasks.get-params.results.namespace)
+        - name: release_name
+          value: $(tasks.get-params.results.release_name)
+      resources:
+        inputs:
+          - name: git-source
+            resource: git-source
+          - name: image-source
+            resource: image-source
+
+
+
+  finally:
+    - name: send-mail
+      taskRef:
+        name: send-mail
+      params:
+        - name: pipeinerun_name
+          value: $(params.pipeinerun_name)
+        - name: user_email
+          value: $(params.user_email)
+        - name: git_project_name
+          value: $(params.git_project_name)
+        - name: git_http_url
+          value: $(params.git_http_url)
+        - name: harbor_url
+          value: $(params.harbor_url)
+        - name: ref
+          value: $(params.ref)
+        - name: ci
+          value: $(params.ci)
+        - name: cd
+          value: $(params.cd)
+

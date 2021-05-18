@@ -1,0 +1,19 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: gitlab-cicd
+spec:
+  serviceAccountName: tekton-pipeline
+  triggers:
+    - name: gitlab-cicd-trigger
+      interceptors:
+        - gitlab:
+            secretRef:
+              secretName: gitlab-cicd
+              secretKey: gitlabToken
+            eventTypes:
+              - Tag Push Hook
+      bindings:
+        - ref: gitlab-cicd
+      template:
+        name: gitlab-cicd

@@ -1,0 +1,70 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: gitlab-cicd
+spec:
+  params:
+    - name: git_project_name
+      description: The git project name
+    - name: git_http_url
+      description: The git project http url
+    - name: default_branch
+    - name: ref
+    - name: checkout_sha
+    - name: harbor_url
+    - name: ci
+    - name: cd
+    - name: user_email
+    - name: pathToDockerFile
+      default: Dockerfile
+    - name: pathToContext
+      description: dockerfile dir
+      default: "/"
+
+
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1alpha1
+      kind: PipelineRun
+      metadata:
+        name: cicd-$(tt.params.checkout_sha)-$(uid)
+      spec:
+        serviceAccountName: tekton-pipeline
+        pipelineRef:
+          name: gitlab-cicd
+        resources:
+          - name: git-source
+            resourceSpec:
+              type: git
+              params:
+                - name: url
+                  value: $(tt.params.git_http_url)
+                - name: revision
+                  value: $(tt.params.default_branch)
+          - name: image-source
+            resourceSpec:
+              type: image
+              params:
+                - name: url
+                  value: $(tt.params.harbor_url)/$(tt.params.ci)
+
+        params:
+          - name: pipeinerun_name
+            value: cicd-$(tt.params.checkout_sha)-$(uid)
+          - name: git_project_name
+            value: $(tt.params.git_project_name)
+          - name: git_http_url
+            value: $(tt.params.git_http_url)
+          - name: ref
+            value: $(tt.params.ref)
+          - name: pathToDockerFile
+            value: Dockerfile
+          - name: pathToContext
+            value:  $(tt.params.pathToContext)
+          - name: harbor_url
+            value: $(tt.params.harbor_url)
+          - name: ci
+            value: $(tt.params.ci)
+          - name: cd
+            value: $(tt.params.cd)
+          - name: user_email
+            value: $(tt.params.user_email)

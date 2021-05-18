@@ -1,0 +1,150 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: push-chart
+spec:
+  resources:
+    inputs:
+      - name: git-source
+        type: git
+      - name: image-source
+        type: image
+  params:
+    - name: harbor_url
+      type: string
+    - name: chart_project
+      type: string
+    - name: chart_name
+      type: string
+    - name: chart_version
+      type: string
+    - name: image_version
+      type: string
+    - name: cluster
+      type: string
+    - name: namespace
+      type: string
+    - name: release_name
+      type: string
+  results:
+    - name: push_chart
+
+
+  steps:
+    - name: update-chart-image-repository
+      image: harbor.arfa.wise-paas.com/lujin/pipeline-node:v-1.0.6
+      securityContext:
+        privileged: true
+      securityContext:
+        runAsUser: 0
+      volumeMounts:
+        - name: kubeconfig
+          mountPath: /kubeconfig
+      env:
+        - name: harbor_username
+          valueFrom:
+            secretKeyRef:
+              name: docker
+              key: username
+        - name: harbor_password
+          valueFrom:
+            secretKeyRef:
+              name: docker
+              key: password
+      script: |
+        #!/usr/bin/env python3
+        import yaml
+        from retry import retry
+        import subprocess
+        import time
+        import os
+
+
+        def read_yaml(file):
+            try:
+                yaml.warnings({'YAMLLoadWarning': False})
+                f = open(file,'r', encoding='utf-8')
+                cfg = f.read()
+                data = yaml.load(cfg)
+                f.close()
+                return data
+            except Exception as e:
+                raise e
+
+
+        def write_yaml(file, data):
+            try:
+                yaml.warnings({'YAMLLoadWarning': False})
+                file = open(file, 'w', encoding='utf-8')
+                yaml.dump(data, file)
+                file.close()
+            except Exception as e:
+                raise e
+
+
+        @retry(Exception, tries=3, delay=1)
+        def push_chart(harbor_url, harbor_username, harbor_password, chart_project, chart_name):
+            try:
+                print("------------- helm repo add -------------------")
+                p = subprocess.run("helm repo add --username %s --password %s %s https://%s/chartrepo/%s" %(harbor_username,harbor_password,chart_project,harbor_url,chart_project), shell=True)
+                if p.returncode == 0:
+                  subprocess.run("helm repo list", shell=True)
+                else:
+                  raise Exception("helm repo add failed")
+                print("------------- helm push ----------------------")
+                p_push = subprocess.run("/opt/bin/helmpush /workspace/git-source/charts/%s/ %s" %(chart_name, chart_project), shell=True)
+                if p_push.returncode != 0:
+                  raise Exception("helm push failed")
+            except Exception as e:
+                raise e
+
+        @retry(Exception, tries=3, delay=1)
+        def upgrade_chart(chart_name, cluster, namespace, release_name):
+            try:
+                print("------------- helm upgrade -------------------")
+                p = subprocess.run("helm upgrade --install %s /workspace/git-source/charts/%s/ -n %s --kubeconfig /kubeconfig/%s" %(release_name,chart_name,namespace,cluster), shell=True)
+                subprocess.run("kubectl rollout restart deploy %s -n %s --kubeconfig /kubeconfig/%s" %(release_name,namespace,cluster), shell=True)
+                if p.returncode != 0:
+                  raise Exception("helm upgrade failed")
+            except Exception as e:
+                raise e
+
+        if __name__=="__main__":
+            chart_name = "$(params.chart_name)"
+            chart_version = "$(params.chart_version)"
+            image_version= "$(params.image_version)"
+            image_repository = str.lower("$(inputs.resources.image-source.url)")
+            values_file = "/workspace/git-source/charts/" + chart_name + "/values.yaml"
+            chart_file = "/workspace/git-source/charts/" + chart_name + "/Chart.yaml"
+            chart = read_yaml(chart_file)
+            chart["version"] = chart_version
+            chart["appVersion"] = image_version
+            write_yaml(chart_file, chart)
+            print("------------- Chart.yaml -------------------\n%s" %(yaml.dump(chart)))
+            values = read_yaml(values_file)
+            try:
+              values["image"]["repository"] = image_repository
+              values["image"]["pullPolicy"] = "IfNotPresent"
+            except:
+              values[chart_name]["image"]["repository"] = image_repository
+              values[chart_name]["image"]["pullPolicy"] = "IfNotPresent"
+            write_yaml(values_file, values)
+            print("------------- values.yaml -------------------\n%s" %(yaml.dump(values)))
+            harbor_url = "$(params.harbor_url)"
+            harbor_username = os.getenv("harbor_username")
+            harbor_password = os.getenv("harbor_password")
+            chart_project = "$(params.chart_project)"
+            cluster = "$(params.cluster)"
+            namespace = "$(params.namespace)"
+            release_name = "$(params.release_name)"
+            push_chart(harbor_url, harbor_username, harbor_password, chart_project, chart_name)
+            if cluster.strip() and namespace.strip() and release_name.strip():
+              upgrade_chart(chart_name, cluster, namespace, release_name)
+            else:
+              print("skip upgrade chart")
+
+  volumes:
+    - name: kubeconfig
+      configMap:
+        name: kubeconfig
+

@@ -1,0 +1,74 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+    name: get-params
+spec:
+    params:
+        - name: git_project_name
+          type: string
+        - name: ref
+          type: string
+        - name: ci
+        - name: cd
+        - name: user_email
+    results:
+        - name: user_email
+        - name: project_name
+        - name: harbor_project
+        - name: chart_image_name
+        - name: image_version
+        - name: chart_version
+        - name: cluster
+        - name: namespace
+        - name: release_name
+
+    steps:
+        - name: get-params
+          image: harbor.arfa.wise-paas.com/lujin/pipeline-node:v-1.0.3
+          script: |
+              #!/usr/bin/env python3
+              import json
+              import requests
+              import os
+              from retry import retry
+
+
+              def result(name, value):
+                  try:
+                      print(name + ": " + value[0])
+                      cmd = "echo -n %s > %s" %(value[0], value[1])
+                      os.system(cmd)
+                  except Exception as e:
+                      raise e
+              if __name__ == "__main__":
+                  git_project_name = "$(params.git_project_name)"
+                  ref = "$(params.ref)"
+                  ci = "$(params.ci)"
+                  cd = "$(params.cd)"
+                  user_email = "$(params.user_email)"
+                  project_name = str.lower(git_project_name)
+                  harbor_project = ci.split("/")[0]
+                  chart_image_name = ci.split("/")[1]
+                  image_version = ref.split("/")[2]
+                  chart_version = ref.split("/")[3]
+                  if cd:
+                      cluster = cd.split("/")[0]
+                      namespace = cd.split("/")[1]
+                      release_name = cd.split("/")[2]
+                  else:
+                      cluster = ""
+                      namespace = ""
+                      release_name = ""
+                  results = {
+                          "user_email": [user_email, "$(results.user_email.path)"],
+                          "project_name": [project_name, "$(results.project_name.path)"],
+                          "harbor_project": [harbor_project, "$(results.harbor_project.path)"],
+                          "chart_image_name": [chart_image_name, "$(results.chart_image_name.path)"],
+                          "image_version": [image_version, "$(results.image_version.path)"],
+                          "chart_version": [chart_version, "$(results.chart_version.path)"],
+                          "cluster": [cluster, "$(results.cluster.path)"],
+                          "namespace": [namespace, "$(results.namespace.path)"],
+                          "release_name": [release_name, "$(results.release_name.path)"]
+                      }
+                  for name, value in results.items():
+                      result(name, value)

@@ -1,0 +1,28 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: gitlab-cicd
+spec:
+  params:
+    - name: git_project_name
+      value: $(body.project.name)
+    - name: git_http_url
+      value: $(body.project.git_http_url)
+    - name: default_branch
+      value: $(body.project.default_branch)
+    - name: ref
+      value: $(body.ref)
+    - name: checkout_sha
+      value: $(body.checkout_sha)
+    - name: harbor_url
+      value: harbor.arfa.wise-paas.com
+    - name: ci
+      value: $(body.project.ci_config_path)
+    - name: cd
+      value: $(body.project.description)
+    - name: user_email
+      value: $(body.user_email)
+    - name: pathToDockerFile
+      value: Dockerfile
+    - name: pathToContext
+      value: ""
