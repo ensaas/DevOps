@@ -12,8 +12,7 @@
     - `kubectl apply -f DeployTekton/tekton-dashboard-release.yaml`
     - `kubectl apply -f DeployTekton/dashboard-ingress.yaml`
     
-## Gitlab Trigger 配置
-
+## 资源链接
 - [Gitlab Trigger 配置](https://shimo.im/docs/WP9CcR9VW6H8qPT9/)  
 
 - [Tekton CLI](https://github.com/tektoncd/cli)
