@@ -14,6 +14,6 @@
     
 ## Gitlab Trigger 配置
 
-[Gitlab Trigger 配置](https://shimo.im/docs/WP9CcR9VW6H8qPT9/)  
+- [Gitlab Trigger 配置](https://shimo.im/docs/WP9CcR9VW6H8qPT9/)  
 
-[Tekton CLI](https://github.com/tektoncd/cli)
+- [Tekton CLI](https://github.com/tektoncd/cli)
